@@ -74,4 +74,27 @@ export const deleteCollection = async (collectionId: string) => {
   const { error } = await supabase.from('collections').delete().eq('id', collectionId);
   if (error) throw error;
   return true;
+};
+
+// Liaison collections-fonts (N-N)
+export const addFontToCollection = async (collectionId: string, fontId: string) => {
+  const { error } = await supabase.from('collections_fonts').insert([{ collection_id: collectionId, font_id: fontId }]);
+  if (error) throw error;
+  return true;
+};
+
+export const removeFontFromCollection = async (collectionId: string, fontId: string) => {
+  const { error } = await supabase.from('collections_fonts').delete().eq('collection_id', collectionId).eq('font_id', fontId);
+  if (error) throw error;
+  return true;
+};
+
+export const getFontsOfCollection = async (collectionId: string) => {
+  const { data, error } = await supabase
+    .from('collections_fonts')
+    .select('font_id, fonts(*)')
+    .eq('collection_id', collectionId);
+  if (error) throw error;
+  // On retourne la liste des polices associées
+  return (data || []).map((row: any) => row.fonts);
 }; 

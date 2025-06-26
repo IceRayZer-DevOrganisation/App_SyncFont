@@ -1,66 +1,122 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Folder, Edit, Trash2, Download, Eye } from 'lucide-react';
+import { Plus, Folder, Trash2, Download, Eye } from 'lucide-react';
 import { Collection, Font } from '../types';
-import { fontService } from '../services/fontService';
+import {
+  getCollections,
+  addCollection,
+  deleteCollection,
+  getFonts,
+  getFontsOfCollection,
+  addFontToCollection,
+  removeFontFromCollection
+} from '../services/supabaseService';
+import { useUser } from './UserContext';
 
 const Collections: React.FC = () => {
+  const { user } = useUser();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [collectionFonts, setCollectionFonts] = useState<Font[]>([]);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [newCollectionDescription, setNewCollectionDescription] = useState('');
 
   useEffect(() => {
-    loadCollections();
-    setFonts(fontService.getFonts());
+    fetchCollections();
+    fetchFonts();
   }, []);
 
-  const loadCollections = () => {
-    setCollections(fontService.getCollections());
+  useEffect(() => {
+    if (selectedCollection) {
+      fetchCollectionFonts(selectedCollection.id);
+    } else {
+      setCollectionFonts([]);
+    }
+  }, [selectedCollection]);
+
+  const fetchCollections = async () => {
+    const data = await getCollections();
+    setCollections(data);
   };
 
-  const handleCreateCollection = () => {
-    if (!newCollectionName.trim()) return;
-    
-    fontService.createCollection(newCollectionName, newCollectionDescription);
+  const fetchFonts = async () => {
+    const data = await getFonts();
+    setFonts(data);
+  };
+
+  const fetchCollectionFonts = async (collectionId: string) => {
+    const data = await getFontsOfCollection(collectionId);
+    setCollectionFonts(data);
+  };
+
+  const handleCreateCollection = async () => {
+    if (!newCollectionName.trim() || !user) return;
+    await addCollection({
+      name: newCollectionName,
+      description: newCollectionDescription,
+      color: '#3B82F6',
+      fontIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: user.id,
+    });
     setNewCollectionName('');
     setNewCollectionDescription('');
     setShowCreateModal(false);
-    loadCollections();
+    fetchCollections();
   };
 
-  const handleDeleteCollection = (id: string) => {
+  const handleDeleteCollection = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this collection?')) {
-      fontService.deleteCollection(id);
-      loadCollections();
+      await deleteCollection(id);
+      fetchCollections();
       if (selectedCollection?.id === id) {
         setSelectedCollection(null);
       }
     }
   };
 
-  const handleExport = (collection: Collection, format: 'csv' | 'json') => {
-    try {
-      const data = fontService.exportCollection(collection.id, format);
-      const blob = new Blob([data], { 
-        type: format === 'json' ? 'application/json' : 'text/csv' 
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${collection.name}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      alert('Error exporting collection');
-    }
+  const handleAddFontToCollection = async (fontId: string) => {
+    if (!selectedCollection) return;
+    await addFontToCollection(selectedCollection.id, fontId);
+    fetchCollectionFonts(selectedCollection.id);
   };
 
-  const getCollectionFonts = (collection: Collection): Font[] => {
-    return fonts.filter(font => collection.fontIds.includes(font.id));
+  const handleRemoveFontFromCollection = async (fontId: string) => {
+    if (!selectedCollection) return;
+    await removeFontFromCollection(selectedCollection.id, fontId);
+    fetchCollectionFonts(selectedCollection.id);
+  };
+
+  // Export cloud (JSON)
+  const handleExport = async (collection: Collection, format: 'csv' | 'json') => {
+    const fontsToExport = await getFontsOfCollection(collection.id);
+    let data = '';
+    if (format === 'json') {
+      data = JSON.stringify({
+        collection: {
+          name: collection.name,
+          description: collection.description,
+        },
+        fonts: fontsToExport
+      }, null, 2);
+    } else {
+      const headers = 'Name,Family,Style,Weight,Format,License,Category,Date Installed,Path';
+      const rows = fontsToExport.map(font =>
+        `"${font.name}","${font.family}","${font.style}",${font.weight},"${font.format}","${font.license}","${font.category}","${font.dateInstalled}","${font.path}"`
+      );
+      data = [headers, ...rows].join('\n');
+    }
+    const blob = new Blob([data], { type: format === 'json' ? 'application/json' : 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${collection.name}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -71,7 +127,6 @@ const Collections: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Collections</h2>
           <p className="text-gray-600 mt-1">Organize your fonts by project</p>
         </div>
-        
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
@@ -80,7 +135,6 @@ const Collections: React.FC = () => {
           <span>New Collection</span>
         </button>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Collections List */}
         <div className="lg:col-span-1">
@@ -88,7 +142,6 @@ const Collections: React.FC = () => {
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-semibold text-gray-900">Your Collections</h3>
             </div>
-            
             <div className="divide-y divide-gray-200">
               {collections.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">
@@ -113,9 +166,6 @@ const Collections: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-900 truncate">{collection.name}</h4>
                         <p className="text-sm text-gray-600 truncate">{collection.description}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {collection.fontIds.length} fonts
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -124,7 +174,6 @@ const Collections: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Collection Details */}
         <div className="lg:col-span-2">
           {selectedCollection ? (
@@ -141,7 +190,6 @@ const Collections: React.FC = () => {
                       <p className="text-gray-600 mt-1">{selectedCollection.description}</p>
                     </div>
                   </div>
-                  
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleExport(selectedCollection, 'csv')}
@@ -150,7 +198,6 @@ const Collections: React.FC = () => {
                     >
                       <Download className="h-4 w-4" />
                     </button>
-                    
                     <button
                       onClick={() => handleDeleteCollection(selectedCollection.id)}
                       className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -161,28 +208,25 @@ const Collections: React.FC = () => {
                   </div>
                 </div>
               </div>
-
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {getCollectionFonts(selectedCollection).map((font) => (
+                  {collectionFonts.map((font) => (
                     <div key={font.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h4 className="font-medium text-gray-900">{font.name}</h4>
                           <p className="text-sm text-gray-600">{font.family}</p>
                         </div>
-                        
                         <button
-                          onClick={() => fontService.removeFontFromCollection(selectedCollection.id, font.id)}
+                          onClick={() => handleRemoveFontFromCollection(font.id)}
                           className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                           title="Remove from collection"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
-                      
                       <div className="bg-gray-50 rounded p-3">
-                        <p 
+                        <p
                           className="text-lg text-gray-900 truncate"
                           style={{ fontFamily: font.family }}
                         >
@@ -192,14 +236,28 @@ const Collections: React.FC = () => {
                     </div>
                   ))}
                 </div>
-
-                {selectedCollection.fontIds.length === 0 && (
+                {collectionFonts.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     <Eye className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p>No fonts in this collection</p>
                     <p className="text-sm">Add fonts from the library</p>
                   </div>
                 )}
+                {/* Ajout de police à la collection */}
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-2">Ajouter une police à cette collection</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {fonts.filter(f => !collectionFonts.some(cf => cf.id === f.id)).map(font => (
+                      <button
+                        key={font.id}
+                        onClick={() => handleAddFontToCollection(font.id)}
+                        className="w-full text-left px-3 py-2 bg-blue-50 rounded hover:bg-blue-100"
+                      >
+                        {font.name} <span className="text-xs text-gray-500">({font.family})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -211,13 +269,11 @@ const Collections: React.FC = () => {
           )}
         </div>
       </div>
-
       {/* Create Collection Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Collection</h3>
-            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -229,7 +285,6 @@ const Collections: React.FC = () => {
                   placeholder="e.g., Brand Project, Website Fonts"
                 />
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
@@ -241,7 +296,6 @@ const Collections: React.FC = () => {
                 />
               </div>
             </div>
-
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -249,7 +303,6 @@ const Collections: React.FC = () => {
               >
                 Cancel
               </button>
-              
               <button
                 onClick={handleCreateCollection}
                 disabled={!newCollectionName.trim()}

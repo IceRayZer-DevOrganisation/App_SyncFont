@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { getFonts, addFont } from '../services/fontService';
 import { useUser } from './UserContext';
 
@@ -11,7 +11,7 @@ const FontLibrary: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Formulaire d'ajout
-  const [newFont, setNewFont] = useState({ name: '', category: '', path: '' });
+  const [newFont, setNewFont] = useState({ name: '', category: '', path: '', family: '', style: '', format: 'TTF', deviceId: '', weight: 400, size: 0, dateInstalled: '', license: 'free', userId: '', italic: false, variable: false, preview: '' });
 
   // Edition
   const [editId, setEditId] = useState<string | null>(null);
@@ -46,9 +46,21 @@ const FontLibrary: React.FC = () => {
       return;
     }
     try {
-      await addFont(newFont);
+      await addFont({
+        ...newFont,
+        userId: user?.id || '',
+        deviceId: '',
+        family: newFont.family || newFont.name,
+        style: newFont.style || 'Regular',
+        format: 'TTF',
+        weight: 400,
+        size: 0,
+        dateInstalled: new Date().toISOString(),
+        license: 'free',
+        category: newFont.category as 'serif' | 'sans-serif' | 'monospace' | 'script' | 'display',
+      });
       setSuccess('Police ajoutée !');
-      setNewFont({ name: '', category: '', path: '' });
+      setNewFont({ name: '', category: '', path: '', family: '', style: '', format: 'TTF', deviceId: '', weight: 400, size: 0, dateInstalled: '', license: 'free', userId: '', italic: false, variable: false, preview: '' });
       fetchFonts();
     } catch (e) {
       setError("Erreur lors de l'ajout.");
@@ -124,13 +136,18 @@ const FontLibrary: React.FC = () => {
           onChange={e => setNewFont(f => ({ ...f, name: e.target.value }))}
           className="border rounded px-2 py-1 flex-1"
         />
-        <input
-          type="text"
-          placeholder="Catégorie"
+        <select
           value={newFont.category}
           onChange={e => setNewFont(f => ({ ...f, category: e.target.value }))}
           className="border rounded px-2 py-1 flex-1"
-        />
+        >
+          <option value="">Catégorie</option>
+          <option value="serif">Serif</option>
+          <option value="sans-serif">Sans-serif</option>
+          <option value="monospace">Monospace</option>
+          <option value="script">Script</option>
+          <option value="display">Display</option>
+        </select>
         <input
           type="text"
           placeholder="Chemin (path)"
