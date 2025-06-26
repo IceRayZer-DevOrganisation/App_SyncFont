@@ -3,12 +3,16 @@ import { Plus, RefreshCw, Folder, Search, Type, Shield, Clock } from 'lucide-rea
 import { fontService } from '../services/fontService';
 import { FontStats } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from './UserContext';
+import AuthModal from './AuthModal';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<FontStats | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScan, setLastScan] = useState<string | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
   const navigate = useNavigate();
+  const { user } = useUser();
 
   useEffect(() => {
     loadStats();
@@ -71,8 +75,11 @@ const Dashboard: React.FC = () => {
           </button>
           
           <button
-            onClick={() => navigate('/collections')}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+            onClick={() => user ? navigate('/collections') : setAuthOpen(true)}
+            className={user
+              ? "flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+              : "flex items-center space-x-2 px-4 py-2 rounded-lg focus:outline-none w-full bg-[#00662E] text-white hover:bg-green-700 transition-colors"
+            }
           >
             <Plus className="h-4 w-4" />
             <span>New Collection</span>
@@ -150,24 +157,30 @@ const Dashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/fonts')}
-              className="w-full flex items-center space-x-3 p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => user ? navigate('/fonts') : setAuthOpen(true)}
+              className={user
+                ? "w-full flex items-center space-x-3 p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                : "w-full flex items-center space-x-3 p-3 text-left rounded-lg bg-[#00662E] text-white hover:bg-green-700 transition-colors"
+              }
             >
-              <Search className="h-5 w-5 text-gray-600" />
+              <Search className={user ? "h-5 w-5 text-gray-600" : "h-5 w-5 text-white"} />
               <div>
-                <p className="font-medium text-gray-900">Browse Font Library</p>
-                <p className="text-sm text-gray-600">Explore all installed fonts</p>
+                <p className="font-medium" style={user ? { color: '#111' } : { color: '#fff' }}>Browse Font Library</p>
+                <p className={user ? "text-sm text-gray-600" : "text-sm text-white/80"}>Explore all installed fonts</p>
               </div>
             </button>
             
             <button
-              onClick={() => navigate('/collections')}
-              className="w-full flex items-center space-x-3 p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => user ? navigate('/collections') : setAuthOpen(true)}
+              className={user
+                ? "w-full flex items-center space-x-3 p-3 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                : "w-full flex items-center space-x-3 p-3 text-left rounded-lg bg-[#00662E] text-white hover:bg-green-700 transition-colors"
+              }
             >
-              <Folder className="h-5 w-5 text-gray-600" />
+              <Folder className={user ? "h-5 w-5 text-gray-600" : "h-5 w-5 text-white"} />
               <div>
-                <p className="font-medium text-gray-900">Manage Collections</p>
-                <p className="text-sm text-gray-600">Organize fonts by project</p>
+                <p className="font-medium" style={user ? { color: '#111' } : { color: '#fff' }}>Manage Collections</p>
+                <p className={user ? "text-sm text-gray-600" : "text-sm text-white/80"}>Organize fonts by project</p>
               </div>
             </button>
           </div>
@@ -200,6 +213,11 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthSuccess={() => setAuthOpen(false)}
+      />
     </div>
   );
 };

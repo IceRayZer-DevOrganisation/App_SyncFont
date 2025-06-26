@@ -14,6 +14,15 @@ const Layout: React.FC = () => {
     navigate('/');
   };
 
+  // Gestion du clic sur les boutons verts
+  const handleAuthNav = (path: string) => {
+    if (user) {
+      navigate(path);
+    } else {
+      setAuthOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
@@ -68,55 +77,30 @@ const Layout: React.FC = () => {
             <Home className="h-4 w-4" />
             <span>Dashboard</span>
           </NavLink>
-          {user ? (
-            <>
-              <NavLink
-                to="/fonts"
-                className={({ isActive }) =>
-                  `flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <Search className="h-4 w-4" />
-                <span>Font Library</span>
-              </NavLink>
-              <NavLink
-                to="/collections"
-                className={({ isActive }) =>
-                  `flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <Folder className="h-4 w-4" />
-                <span>Collections</span>
-              </NavLink>
-            </>
-          ) : (
-            <>
-              <button
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed bg-gray-100"
-                title="Connectez-vous pour accéder à la bibliothèque de polices"
-                disabled
-              >
-                <Search className="h-4 w-4" />
-                <span>Font Library</span>
-              </button>
-              <button
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed bg-gray-100"
-                title="Connectez-vous pour accéder aux collections"
-                disabled
-              >
-                <Folder className="h-4 w-4" />
-                <span>Collections</span>
-              </button>
-            </>
-          )}
+          {/* Font Library */}
+          <button
+            onClick={() => handleAuthNav('/fonts')}
+            className={user
+              ? "flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              : "flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium bg-[#00662E] text-white hover:bg-green-700 transition-colors"
+            }
+            style={{ minWidth: 120 }}
+          >
+            <Search className={user ? "h-4 w-4 text-gray-600" : "h-4 w-4 text-white"} />
+            <span>Font Library</span>
+          </button>
+          {/* Collections */}
+          <button
+            onClick={() => handleAuthNav('/collections')}
+            className={user
+              ? "flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              : "flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium bg-[#00662E] text-white hover:bg-green-700 transition-colors"
+            }
+            style={{ minWidth: 120 }}
+          >
+            <Folder className={user ? "h-4 w-4 text-gray-600" : "h-4 w-4 text-white"} />
+            <span>Collections</span>
+          </button>
         </nav>
         <main>
           <Outlet />
