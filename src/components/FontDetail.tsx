@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Download, Shield, Calendar, HardDrive, Type, Edit } from 'lucide-react';
 import { Font, Collection } from '../types';
-import { fontService } from '../services/fontService';
+import { getFonts } from '../services/fontService';
+import { getCollections, addFontToCollection } from '../services/supabaseService';
 
 const FontDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,11 +15,16 @@ const FontDetail: React.FC = () => {
   const [previewSize, setPreviewSize] = useState(24);
 
   useEffect(() => {
-    if (id) {
-      const foundFont = fontService.getFont(id);
-      setFont(foundFont || null);
-      setCollections(fontService.getCollections());
-    }
+    const fetchData = async () => {
+      if (id) {
+        const fonts = await getFonts();
+        const foundFont = fonts.find((f: Font) => f.id === id);
+        setFont(foundFont || null);
+        const cols = await getCollections();
+        setCollections(cols);
+      }
+    };
+    fetchData();
   }, [id]);
 
   if (!font) {
@@ -53,8 +59,9 @@ const FontDetail: React.FC = () => {
     }
   };
 
-  const handleAddToCollection = (collectionId: string) => {
-    fontService.addFontToCollection(collectionId, font.id);
+  const handleAddToCollection = async (collectionId: string) => {
+    if (!font) return;
+    await addFontToCollection(collectionId, font.id);
     setShowAddToCollection(false);
     // Show success message or update UI
   };
