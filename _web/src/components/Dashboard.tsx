@@ -9,7 +9,7 @@ import AuthModal from './AuthModal';
 const Dashboard: React.FC = () => {
   const [fonts, setFonts] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
+  const [] = useState(false);
   const [lastScan, setLastScan] = useState<string | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const navigate = useNavigate();
@@ -48,6 +48,12 @@ const Dashboard: React.FC = () => {
     });
   };
 
+  const handleScanFonts = () => {
+    // Ici, tu pourras intégrer la logique de scan réelle (Electron ou web)
+    // Pour l'instant, on simule un scan local
+    alert("Scan des polices lancé ! (démo)");
+  };
+
   return (
     <div className="space-y-8">
       {/* Header Actions */}
@@ -58,9 +64,8 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={() => {}}
-            disabled={true}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-300 text-white rounded-lg opacity-50 cursor-not-allowed"
+            onClick={handleScanFonts}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
             <RefreshCw className="h-4 w-4" />
             <span>Scan Fonts</span>

@@ -23,3 +23,26 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Python
+python/venv/
+python/__pycache__/
+python/*.pyc
+python/*.pyo
+python/*.pyd
+.Python
+python/env/
+python/ENV/
+python/env.bak/
+python/ENV.bak/
+python/scanned_fonts.json
+python/.env
+
+# Electron
+_electron/dist/
+_electron/node_modules/
+_electron/out/
+
+# Supabase
+.env
+.env.local

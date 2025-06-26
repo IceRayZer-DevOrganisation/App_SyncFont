@@ -1,0 +1,16 @@
+# Dépendances Python pour App_SyncFont
+# Gestion des polices et scan système
+fonttools>=4.45.0
+Pillow>=10.0.0
+requests>=2.31.0
+
+# API et communication avec l'app Electron
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Utilitaires système
+psutil>=5.9.0
+pathlib2>=2.3.7
+
+# Environnement virtuel (optionnel)
+python-dotenv>=1.0.0 

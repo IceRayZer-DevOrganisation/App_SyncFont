@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Shield, Calendar, HardDrive, Type, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Shield, Calendar, HardDrive, Type, Edit } from 'lucide-react';
 import { Font, Collection } from '../types';
 import { getFonts } from '../services/fontService';
 import { getCollections, addFontToCollection } from '../services/supabaseService';
