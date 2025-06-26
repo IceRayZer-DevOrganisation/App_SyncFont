@@ -1,90 +1,111 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Eye, Trash2, Edit2, Check, X } from 'lucide-react';
-import { supabase } from '../services/supabaseService';
+import { getFonts, addFont } from '../services/fontService';
+import { useUser } from './UserContext';
 
 const FontLibrary: React.FC = () => {
+  const { user } = useUser();
   const [fonts, setFonts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Formulaire d'ajout
-  const [newFont, setNewFont] = useState({ name: '', category: '', url: '' });
+  const [newFont, setNewFont] = useState({ name: '', category: '', path: '' });
 
   // Edition
   const [editId, setEditId] = useState<string | null>(null);
-  const [editFont, setEditFont] = useState({ name: '', category: '', url: '' });
+  const [editFont, setEditFont] = useState({ name: '', category: '', path: '' });
 
   // Récupérer les polices
   const fetchFonts = async () => {
+    if (!user) return;
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.from('fonts').select('*').order('created_at', { ascending: false });
-    if (error) setError("Erreur lors de la récupération des polices.");
-    else setFonts(data || []);
+    try {
+      const data = await getFonts();
+      setFonts(data || []);
+    } catch (e) {
+      setError("Erreur lors de la récupération des polices.");
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchFonts();
-  }, []);
+    // eslint-disable-next-line
+  }, [user]);
 
   // Ajouter une police
   const handleAddFont = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    if (!newFont.name || !newFont.category || !newFont.url) {
+    if (!newFont.name || !newFont.category || !newFont.path) {
       setError('Tous les champs sont obligatoires.');
       return;
     }
-    const { error } = await supabase.from('fonts').insert([newFont]);
-    if (error) setError("Erreur lors de l'ajout.");
-    else {
+    try {
+      await addFont(newFont);
       setSuccess('Police ajoutée !');
-      setNewFont({ name: '', category: '', url: '' });
+      setNewFont({ name: '', category: '', path: '' });
       fetchFonts();
+    } catch (e) {
+      setError("Erreur lors de l'ajout.");
     }
   };
 
   // Supprimer une police
   const handleDeleteFont = async (id: string) => {
     if (!window.confirm('Supprimer cette police ?')) return;
-    const { error } = await supabase.from('fonts').delete().eq('id', id);
-    if (error) setError("Erreur lors de la suppression.");
-    else {
-      setSuccess('Police supprimée.');
-      fetchFonts();
+    setError(null);
+    setSuccess(null);
+    try {
+      // Suppression via Supabase
+      // (à ajouter dans fontService si besoin)
+      // Ici, on fait directement l'appel
+      const { error } = await import('../services/supabaseService').then(m => m.supabase.from('fonts').delete().eq('id', id));
+      if (error) setError("Erreur lors de la suppression.");
+      else {
+        setSuccess('Police supprimée.');
+        fetchFonts();
+      }
+    } catch (e) {
+      setError("Erreur lors de la suppression.");
     }
   };
 
   // Préparer l'édition
   const startEdit = (font: any) => {
     setEditId(font.id);
-    setEditFont({ name: font.name, category: font.category, url: font.url });
+    setEditFont({ name: font.name, category: font.category, path: font.path });
   };
 
   // Annuler l'édition
   const cancelEdit = () => {
     setEditId(null);
-    setEditFont({ name: '', category: '', url: '' });
+    setEditFont({ name: '', category: '', path: '' });
   };
 
   // Valider l'édition
   const handleEditFont = async (id: string) => {
     setError(null);
     setSuccess(null);
-    if (!editFont.name || !editFont.category || !editFont.url) {
+    if (!editFont.name || !editFont.category || !editFont.path) {
       setError('Tous les champs sont obligatoires.');
       return;
     }
-    const { error } = await supabase.from('fonts').update(editFont).eq('id', id);
-    if (error) setError("Erreur lors de la modification.");
-    else {
-      setSuccess('Police modifiée !');
-      setEditId(null);
-      setEditFont({ name: '', category: '', url: '' });
-      fetchFonts();
+    try {
+      const { error } = await import('../services/supabaseService').then(m => m.supabase.from('fonts').update(editFont).eq('id', id));
+      if (error) setError("Erreur lors de la modification.");
+      else {
+        setSuccess('Police modifiée !');
+        setEditId(null);
+        setEditFont({ name: '', category: '', path: '' });
+        fetchFonts();
+      }
+    } catch (e) {
+      setError("Erreur lors de la modification.");
     }
   };
 
@@ -112,9 +133,9 @@ const FontLibrary: React.FC = () => {
         />
         <input
           type="text"
-          placeholder="URL"
-          value={newFont.url}
-          onChange={e => setNewFont(f => ({ ...f, url: e.target.value }))}
+          placeholder="Chemin (path)"
+          value={newFont.path}
+          onChange={e => setNewFont(f => ({ ...f, path: e.target.value }))}
           className="border rounded px-2 py-1 flex-1"
         />
         <button type="submit" className="bg-blue-600 text-white px-4 py-1 rounded flex items-center gap-1">
@@ -145,8 +166,8 @@ const FontLibrary: React.FC = () => {
                   />
                   <input
                     type="text"
-                    value={editFont.url}
-                    onChange={e => setEditFont(f => ({ ...f, url: e.target.value }))}
+                    value={editFont.path}
+                    onChange={e => setEditFont(f => ({ ...f, path: e.target.value }))}
                     className="border rounded px-2 py-1 flex-1"
                   />
                   <button onClick={() => handleEditFont(font.id)} className="bg-green-600 text-white px-2 py-1 rounded flex items-center"><Check className="w-4 h-4" /></button>
@@ -157,7 +178,7 @@ const FontLibrary: React.FC = () => {
                   <div className="flex-1">
                     <div className="font-bold">{font.name}</div>
                     <div className="text-sm text-gray-600">Catégorie : {font.category}</div>
-                    <div className="text-sm text-blue-600"><a href={font.url} target="_blank" rel="noopener noreferrer">{font.url}</a></div>
+                    <div className="text-sm text-blue-600"><a href={font.path} target="_blank" rel="noopener noreferrer">{font.path}</a></div>
                   </div>
                   <div className="flex gap-2 mt-2 md:mt-0">
                     <button onClick={() => startEdit(font)} className="bg-yellow-400 text-white px-2 py-1 rounded flex items-center" title="Modifier"><Edit2 className="w-4 h-4" /></button>

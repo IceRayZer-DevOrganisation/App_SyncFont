@@ -46,13 +46,32 @@ export const getFonts = async (userId: string) => {
 
 // Collections
 export const addCollection = async (collection: Omit<Collection, 'id'>) => {
-  const { data, error } = await supabase.from('collections').insert([collection]).select();
+  const { data: userData } = await getUser();
+  const user = userData?.user;
+  if (!user) throw new Error('Utilisateur non connecté');
+
+  const { data, error } = await supabase.from('collections').insert([{
+    user_id: user.id,
+    name: collection.name,
+    description: collection.description,
+    color: collection.color,
+  }]).select();
   if (error) throw error;
   return data?.[0];
 };
 
-export const getCollections = async (userId: string) => {
-  const { data, error } = await supabase.from('collections').select('*').eq('user_id', userId);
+export const getCollections = async () => {
+  const { data: userData } = await getUser();
+  const user = userData?.user;
+  if (!user) throw new Error('Utilisateur non connecté');
+
+  const { data, error } = await supabase.from('collections').select('*').eq('user_id', user.id);
   if (error) throw error;
   return data as Collection[];
+};
+
+export const deleteCollection = async (collectionId: string) => {
+  const { error } = await supabase.from('collections').delete().eq('id', collectionId);
+  if (error) throw error;
+  return true;
 }; 
