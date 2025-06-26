@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { Font, Collection, Device } from '../types';
 
-const supabaseUrl = 'https://gkbrfejufazgzlowtgjd.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrYnJmZWp1ZmF6Z3psb3d0Z2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MzgxMTMsImV4cCI6MjA2NjUxNDExM30.WfEvb1Yv3FQAogtbuy4JhTz2np-XK7dVCFe-7S8bXfk';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// Ne jamais committer vos vraies clés dans le code ! Utilisez .env
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
